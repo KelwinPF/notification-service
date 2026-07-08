@@ -11,6 +11,7 @@ import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.kafka.listener.CommonErrorHandler;
 import org.springframework.kafka.support.converter.JsonMessageConverter;
 
 import java.util.HashMap;
@@ -22,6 +23,8 @@ import java.util.Map;
  * Configura a deserialização de eventos JSON recebidos dos tópicos:
  * - orders.completed
  * - orders.failed
+ * 
+ * Inclui configuração de retry e DLQ via CommonErrorHandler
  */
 @Configuration
 @EnableKafka
@@ -58,14 +61,18 @@ public class KafkaConsumerConfig {
 
     /**
      * Factory para criar listeners Kafka com configuração customizada
+     * Inclui ErrorHandler para retry e DLQ
      */
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory() {
+    public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory(
+            CommonErrorHandler errorHandler) {
         ConcurrentKafkaListenerContainerFactory<String, String> factory = 
             new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
         // JsonMessageConverter converte String JSON para o tipo do parâmetro do método
         factory.setRecordMessageConverter(new JsonMessageConverter(objectMapper));
+        // Configura error handler com retry e DLQ
+        factory.setCommonErrorHandler(errorHandler);
         return factory;
     }
 }
